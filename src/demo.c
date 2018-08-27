@@ -11,8 +11,6 @@
 
 #define DEMO 1
 
-#ifdef OPENCV
-
 static char **demo_names;
 static image **demo_alphabet;
 static int demo_classes;
@@ -21,8 +19,10 @@ static network *net;
 static image buff [3];
 static image buff_letter[3];
 static int buff_index = 0;
+#ifdef OPENCV
 static CvCapture * cap;
 static IplImage  * ipl;
+#endif
 static float fps = 0;
 static float demo_thresh = 0;
 static float demo_hier = .5;
@@ -89,7 +89,11 @@ void *detect_in_thread(void *ptr)
     float nms = .4;
 
     layer l = net->layers[net->n-1];
+#ifdef GL_HOOK
+    float *X = ptr;
+#else
     float *X = buff_letter[(buff_index+2)%3].data;
+#endif
     network_predict(net, X);
 
     /*
@@ -125,10 +129,12 @@ void *detect_in_thread(void *ptr)
 
     if (nms > 0) do_nms_obj(dets, nboxes, l.classes, nms);
 
+#if 1
     printf("\033[2J");
     printf("\033[1;1H");
     printf("\nFPS:%.1f\n",fps);
     printf("Objects:\n\n");
+#endif
     image display = buff[(buff_index+2) % 3];
     draw_detections(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes);
     free_detections(dets, nboxes);
@@ -138,6 +144,7 @@ void *detect_in_thread(void *ptr)
     return 0;
 }
 
+#ifdef OPENCV
 void *fetch_in_thread(void *ptr)
 {
     int status = fill_image_from_stream(cap, buff[buff_index]);
@@ -181,10 +188,15 @@ void *detect_loop(void *ptr)
         detect_in_thread(0);
     }
 }
+#endif
 
+#if defined(OPENCV) || defined(GL_HOOK)
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
 {
     //demo_frame = avg_frames;
+#ifdef GL_HOOK
+    demo_frame = 1;
+#endif
     image **alphabet = load_alphabet();
     demo_names = names;
     demo_alphabet = alphabet;
@@ -207,6 +219,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     }
     avg = calloc(demo_total, sizeof(float));
 
+#ifdef GL_HOOK
+    buff[0].w = net->w;
+    buff[0].h = net->h;
+    buff[0].c = net->c;
+#else
     if(filename){
         printf("video file: %s\n", filename);
         cap = cvCaptureFromFile(filename);
@@ -264,6 +281,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         pthread_join(detect_thread, 0);
         ++count;
     }
+#endif
 }
 
 /*

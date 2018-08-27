@@ -17,6 +17,8 @@ decaf/
 submission/
 cfg/
 darknet
+libdarknet.so
+yolo.weights
 .fuse*
 
 # OS Generated #

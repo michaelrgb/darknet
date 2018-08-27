@@ -10,6 +10,10 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#ifdef GL_HOOK
+#include "../../objectify.h"
+#endif
+
 int windows = 0;
 
 float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
@@ -280,6 +284,15 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
             box b = dets[i].bbox;
             //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
 
+#ifdef GL_HOOK
+            Detection det;
+            det.b = b;
+            det.className = names[class];
+            det.prob = dets[i].prob[class];
+            det.lineWidth = width;
+            memcpy(det.rgb, rgb, sizeof(det.rgb));
+            addDetection(det);
+#else
             int left  = (b.x-b.w/2.)*im.w;
             int right = (b.x+b.w/2.)*im.w;
             int top   = (b.y-b.h/2.)*im.h;
@@ -305,6 +318,7 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
                 free_image(resized_mask);
                 free_image(tmask);
             }
+#endif
         }
     }
 }

@@ -401,7 +401,13 @@ void visualize(char *cfgfile, char *weightfile)
 #endif
 }
 
-int main(int argc, char **argv)
+int
+#ifdef GL_HOOK
+mainDarknet
+#else
+main
+#endif
+(int argc, char **argv)
 {
     //test_resize("data/bad.jpg");
     //test_box();
